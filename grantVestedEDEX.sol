@@ -1,4 +1,4 @@
-pragma solidity 0.4.16;
+pragma solidity ^0.4.16;
 
   contract SafeMath{
 
@@ -154,7 +154,7 @@ pragma solidity 0.4.16;
       	sixthTeamWithdrawal = fifthTeamWithdrawal + 13 weeks;
       	seventhTeamWithdrawal = sixthTeamWithdrawal + 13 weeks;
       	eighthTeamWithdrawal = seventhTeamWithdrawal + 13 weeks;
-      	uint256 amountToTransfer = safeMul(balance, 6) / 10;
+      	uint256 amountToTransfer = safeDiv(safeMul(balance, 6), 10);
       	ERC20Token.transfer(beneficiary, amountToTransfer);
       	nextPhase();
   	}
