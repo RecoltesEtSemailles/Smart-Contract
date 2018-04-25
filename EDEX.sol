@@ -259,7 +259,7 @@ contract EDEX is StandardToken{
     function tokenAllocation(address investor, uint256 amountTokens) private{
         require(grantVestedEDEXSet);
         // the 15% allocated to the team
-        uint256 teamAllocation = safeDiv(safeMul(amountTokens, 1764705882352941), 10e16);
+        uint256 teamAllocation = safeDiv(safeMul(amountTokens, 1764705882352941), 1e16);
         uint256 newTokens = safeAdd(amountTokens, teamAllocation);
         require(safeAdd(totalSupply, newTokens) <= maxSupply);
         totalSupply = safeAdd(totalSupply, newTokens);
