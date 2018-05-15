@@ -157,6 +157,7 @@ contract EDEX is StandardToken{
     event LiquidationCall(address indexed investor, uint256 amountTokens);
     event Liquidations(address indexed investor, uint256 amountTokens, uint256 etherAmount);
     event Buy(address indexed investor, address indexed beneficiary, uint256 ethValue, uint256 amountTokens);
+    event PrivateSale(address indexed investor, uint256 amountTokens);
     event PriceEDEXUpdate(uint256 topInteger, uint256 bottomInteger);
     event AddLiquidity(uint256 etherAmount);
     event RemoveLiquidity(uint256 etherAmount);
@@ -240,7 +241,7 @@ contract EDEX is StandardToken{
 
     function require_limited_change (uint256 newTopInteger) private only_if_secondaryWallet require_waited only_if_increase(newTopInteger){
         uint256 percentage_diff = 0;
-        percentage_diff = safeDiv(safeMul(newTopInteger, 100), currentPrice.topInteger);
+        percentage_diff = safeMul(newTopInteger, 100) / currentPrice.topInteger;
         percentage_diff = safeSub(percentage_diff, 100);
         // secondaryWallet can increase price by 20% maximum once every priceUpdateWaitingTime
         require(percentage_diff <= 20);
@@ -259,12 +260,21 @@ contract EDEX is StandardToken{
     function tokenAllocation(address investor, uint256 amountTokens) private{
         require(grantVestedEDEXSet);
         // the 15% allocated to the team
-        uint256 teamAllocation = safeDiv(safeMul(amountTokens, 1764705882352941), 1e16);
+        uint256 teamAllocation = safeMul(amountTokens, 1764705882352941) / 1e16;
         uint256 newTokens = safeAdd(amountTokens, teamAllocation);
         require(safeAdd(totalSupply, newTokens) <= maxSupply);
         totalSupply = safeAdd(totalSupply, newTokens);
         balances[investor] = safeAdd(balances[investor], amountTokens);
         balances[grantVestedEDEXContract] = safeAdd(balances[grantVestedEDEXContract], teamAllocation);
+    }
+
+    function privateSaleTokens(address investor, uint amountTokens) external onlyMainWallet{
+        require(block.number < icoEndBlock);
+        require(investor != address(0));
+        verified[investor] = true;
+        tokenAllocation(investor, amountTokens);
+        Verification(investor);
+        PrivateSale(investor, amountTokens);
     }
 
     function verifyInvestor(address investor) external onlyControllingWallets{
@@ -288,7 +298,7 @@ contract EDEX is StandardToken{
         require(msg.value >= minInvestment);
         require(block.number >= icoStartBlock && block.number < icoEndBlock);
         uint256 icoBottomInteger = icoBottomIntegerPrice();
-        uint256 tokensToBuy = safeDiv(safeMul(msg.value, currentPrice.topInteger), icoBottomInteger);
+        uint256 tokensToBuy = safeMul(msg.value, currentPrice.topInteger) / icoBottomInteger;
         tokenAllocation(investor, tokensToBuy);
         // send ether to mainWallet
         mainWallet.transfer(msg.value);
@@ -305,11 +315,11 @@ contract EDEX is StandardToken{
         }
         // icoDuration < 230,400 blocks = 40 days
         else if (icoDuration < 200 ){
-            bottomInteger = safeDiv(safeMul(currentPrice.bottomInteger, 110), 100);
+            bottomInteger = safeMul(currentPrice.bottomInteger, 110) / 100;
             return bottomInteger;
         }
         else{
-            bottomInteger = safeDiv(safeMul(currentPrice.bottomInteger, 120), 100);
+            bottomInteger = safeMul(currentPrice.bottomInteger, 120) / 100;
             return bottomInteger;
         }
     }
@@ -350,7 +360,7 @@ contract EDEX is StandardToken{
         // obtain the next price that was set after the request
         PriceEDEX storage price = prices[requestTime];
         require(price.topInteger > 0);
-        uint256 liquidationValue = safeDiv(safeMul(tokens, price.bottomInteger), price.topInteger);
+        uint256 liquidationValue = safeMul(tokens, price.bottomInteger) / price.topInteger;
         // if there is ebough ether on the contract, proceed. Otherwise, send back tokens
         liquidations[investor].tokens = 0;
         if (this.balance >= liquidationValue)
@@ -375,7 +385,7 @@ contract EDEX is StandardToken{
     function checkLiquidationValue(uint256 amountTokensToLiquidate) constant returns (uint256 etherValue){
         require(amountTokensToLiquidate > 0);
         require(balanceOf(msg.sender) >= amountTokensToLiquidate);
-        uint256 liquidationValue = safeDiv(safeMul(amountTokensToLiquidate, currentPrice.bottomInteger), currentPrice.topInteger);
+        uint256 liquidationValue = safeMul(amountTokensToLiquidate, currentPrice.bottomInteger) / currentPrice.topInteger;
         require(this.balance >= liquidationValue);
         return liquidationValue;
     }
@@ -407,6 +417,13 @@ contract EDEX is StandardToken{
         require(block.number > icoEndBlock);
         setTrading = true;
     }
+
+    function claimEDEX(address _token) external onlyMainWallet{
+        require(_token != address(0));
+        Token token = Token(_token);
+        uint256 balance = token.balanceOf(this);
+        token.transfer(mainWallet, balance);
+     }
 
     // disable transfers and allow them once token is tradeable
     function transfer(address _to, uint256 _value) isSetTrading returns (bool success){
