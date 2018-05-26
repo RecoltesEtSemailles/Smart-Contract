@@ -119,7 +119,7 @@ contract EDEX is StandardToken{
     // reachable if max amount raised
     uint256 public maxSupply = 100000000e18;
     
-    // ICO starting and ending blocks, can by changed as needed
+    // ICO starting and ending blocks, can be changed as needed
     uint256 public icoStartBlock;
     // icoEndBlock = icoStartBlock + 345,600 blocks for 2 months ICO
     uint256 public icoEndBlock;
@@ -213,9 +213,9 @@ contract EDEX is StandardToken{
         secondaryWallet = secondaryWalletInput;
         verified[mainWallet] = true;
         verified[secondaryWallet] = true;
-        // priceTopIntegerInput = 800,000 for 1 ETH = 800 EDEX at 1 ETH = $400
+        // priceTopIntegerInput = 800,000 for 1 ETH = 800 EDEX
         currentPrice = PriceEDEX(priceTopIntegerInput, 1000);
-        // icoStartBlock should be around block number 5,528,800 = May 1st 2018
+        // icoStartBlock should be around block number 5,709,200 = June 1st 2018
         icoStartBlock = startBlockInput;
         // icoEndBlock = icoStartBlock + 345,600 blocks
         icoEndBlock = endBlockInput;
@@ -361,7 +361,7 @@ contract EDEX is StandardToken{
         PriceEDEX storage price = prices[requestTime];
         require(price.topInteger > 0);
         uint256 liquidationValue = safeMul(tokens, price.bottomInteger) / price.topInteger;
-        // if there is ebough ether on the contract, proceed. Otherwise, send back tokens
+        // if there is enough ether on the contract, proceed. Otherwise, send back tokens
         liquidations[investor].tokens = 0;
         if (this.balance >= liquidationValue)
             enact_liquidation_greater_equal(investor, liquidationValue, tokens);
